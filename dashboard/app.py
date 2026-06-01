@@ -70,17 +70,17 @@ with tab_overview:
     country = filtered.groupby("country", as_index=False).agg(revenue=("net_revenue", "sum"), orders=("invoice_no", "nunique")).sort_values("revenue", ascending=False).head(top_n)
     c1, c2 = st.columns(2)
     with c1:
-        st.plotly_chart(px.line(monthly, x="month", y="revenue", markers=True, title="Monthly Revenue Trend"), use_container_width=True)
+        st.plotly_chart(px.line(monthly, x="month", y="revenue", markers=True, title="Monthly Revenue Trend"), width="stretch")
     with c2:
-        st.plotly_chart(px.bar(country, x="country", y="revenue", color="orders", title="Top Countries by Revenue"), use_container_width=True)
+        st.plotly_chart(px.bar(country, x="country", y="revenue", color="orders", title="Top Countries by Revenue"), width="stretch")
 
     day_hour = filtered.groupby(["day_name", "hour"], as_index=False)["net_revenue"].sum()
-    st.plotly_chart(px.density_heatmap(day_hour, x="hour", y="day_name", z="net_revenue", title="Revenue Heatmap by Day and Hour"), use_container_width=True)
+    st.plotly_chart(px.density_heatmap(day_hour, x="hour", y="day_name", z="net_revenue", title="Revenue Heatmap by Day and Hour"), width="stretch")
 
 with tab_products:
     product = filtered.groupby("description", as_index=False).agg(revenue=("net_revenue", "sum"), units=("quantity", "sum")).sort_values("revenue", ascending=False).head(top_n)
-    st.plotly_chart(px.bar(product, x="revenue", y="description", orientation="h", color="units", title="Top Products by Revenue"), use_container_width=True)
-    st.dataframe(product, use_container_width=True, hide_index=True)
+    st.plotly_chart(px.bar(product, x="revenue", y="description", orientation="h", color="units", title="Top Products by Revenue"), width="stretch")
+    st.dataframe(product, width="stretch", hide_index=True)
 
 with tab_customers:
     customer = filtered.dropna(subset=["customer_id"]).groupby("customer_id", as_index=False).agg(
@@ -91,8 +91,8 @@ with tab_customers:
     max_date_ts = filtered["invoice_date"].max()
     customer["recency_days"] = (max_date_ts - customer["last_purchase"]).dt.days
     customer = customer.sort_values("revenue", ascending=False).head(top_n)
-    st.plotly_chart(px.scatter(customer, x="orders", y="revenue", size="revenue", color="recency_days", hover_name="customer_id", title="Customer RFM View"), use_container_width=True)
-    st.dataframe(customer, use_container_width=True, hide_index=True)
+    st.plotly_chart(px.scatter(customer, x="orders", y="revenue", size="revenue", color="recency_days", hover_name="customer_id", title="Customer RFM View"), width="stretch")
+    st.dataframe(customer, width="stretch", hide_index=True)
 
 with tab_sql:
     sql_dir = Path("outputs/sql_results")
@@ -101,5 +101,5 @@ with tab_sql:
         st.warning("Run `python src/sql_analysis.py` first.")
     for file in files:
         st.subheader(file.stem.replace("_", " ").title())
-        st.dataframe(pd.read_csv(file), use_container_width=True, hide_index=True)
+        st.dataframe(pd.read_csv(file), width="stretch", hide_index=True)
 
