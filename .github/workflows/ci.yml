@@ -31,3 +31,21 @@ jobs:
           ! grep -R "github_pat_" .
           ! grep -R "AKIA[0-9A-Z]" .
 
+  codespace:
+    # Builds .devcontainer (what GitHub Codespaces runs) and runs the doctor and the
+    # whole pipeline inside it, so "Open in Codespaces" is known to work.
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build the dev container and run the pipeline in it
+        uses: devcontainers/ci@v0.3
+        with:
+          push: never
+          runCmd: |
+            python scripts/doctor.py || true
+            bash scripts/run_all.sh
+            ls -la outputs/sql_results outputs/figures
+

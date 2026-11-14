@@ -1,5 +1,9 @@
 <h1 align="center">Retail Revenue Intelligence</h1>
 
+<p align="center"><a href="https://codespaces.new/analyticsdurgesh/Retail-Revenue-Intelligence?quickstart=1"><img src="https://github.com/codespaces/badge.svg" alt="Open in GitHub Codespaces"></a></p>
+
+<p align="center">Run the whole project in your browser, with nothing to install. Fork it first if you want to keep your work.</p>
+
 
 <!-- de-book-banner -->
 > ### Free book: *Data Engineering: From Zero to Production & Interview Ready*
@@ -102,12 +106,22 @@ flowchart TB
 
 ## Run End to End
 
+Two ways to set up. Either way, `python scripts/doctor.py` checks your setup in plain words and
+prints the exact fix for anything missing (macOS, Linux and Windows).
+
+**In your browser (nothing to install):** press **Open in GitHub Codespaces** above (or, on your
+fork: Code → Codespaces → Create codespace). The packages install themselves; then run
+`bash scripts/run_all.sh` and `streamlit run dashboard/app.py` in the Codespace terminal.
+
+**On your laptop:**
+
 ```bash
 git clone https://github.com/analyticsdurgesh/Retail-Revenue-Intelligence.git
 cd Retail-Revenue-Intelligence
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+python scripts/doctor.py
 bash scripts/run_all.sh
 streamlit run dashboard/app.py
 ```
