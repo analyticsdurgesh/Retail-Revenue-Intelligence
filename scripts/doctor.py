@@ -16,16 +16,29 @@ import os
 import platform
 import re
 import shutil
+import ssl
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WINDOWS = platform.system() == "Windows"
 MIN_PYTHON = (3, 11)
+# The Python every Lab project is tested on, on Mac and Windows. 3.15 runs this project, but the dbt
+# projects that follow cannot install on it yet, so the doctor says so early.
+RECOMMENDED = "3.13"
+PYTHON_313_PAGE = "https://www.python.org/downloads/release/python-31317/"
 DATASET_HOST = "https://archive.ics.uci.edu/"
 problems = 0
+
+# Windows sends redirected output through cp1252, which has no ✓ or ✗: print UTF-8 everywhere instead.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
+    except (AttributeError, ValueError):
+        pass
 
 
 def say(mark: str, text: str, fix: str = "") -> None:
@@ -50,13 +63,22 @@ def environment() -> str:
     return ""
 
 
+def note(text: str, fix: str = "") -> None:
+    say("!", text, fix)
+
+
 def check_python() -> None:
     version = ".".join(map(str, sys.version_info[:3]))
-    if sys.version_info[:2] >= MIN_PYTHON:
-        say("✓", f"Python {version}")
+    install = (f"Install Python {RECOMMENDED} (Module 1, Lesson 3 in the Lab has the exact installer for Mac\n"
+               f"and Windows, or see {PYTHON_313_PAGE} ), then make the venv again.")
+    if sys.version_info[:2] < MIN_PYTHON:
+        bad(f"Python {version} is too old: this project needs 3.11 or newer", install)
+    elif sys.version_info[:2] >= (3, 15):
+        say("✓", f"Python {version} runs this project")
+        note(f"The dbt projects after this one (Blinkit, Airbnb) cannot install on Python {version[:4]} yet",
+             install.replace("then make the venv again", "and use it for those projects"))
     else:
-        bad(f"Python {version} is too old: this project needs 3.11 or newer",
-            "Install Python 3.11+ from https://www.python.org/downloads/ , then make the venv again.")
+        say("✓", f"Python {version}")
 
 
 def check_isolation() -> None:
@@ -121,7 +143,10 @@ def check_git() -> None:
             'git config --global user.name "Your Name"\ngit config --global user.email "you@example.com"\n'
             "(Use the email of your GitHub account.)")
     origin = value("remote.origin.url")
-    if "analyticsdurgesh/" in origin.lower():
+    # The project's own CI runs on the original repository, so it skips this one check (PNP_DOCTOR_CI=1).
+    if "analyticsdurgesh/" in origin.lower() and os.environ.get("PNP_DOCTOR_CI") == "1":
+        say("·", "Fork check skipped (the project's own CI runs on the original repository)")
+    elif "analyticsdurgesh/" in origin.lower():
         bad("This folder is a copy of the ORIGINAL repository, not your fork",
             "Fork the project on GitHub (the Fork button), then clone YOUR fork:\n"
             "git clone https://github.com/<your-username>/Retail-Revenue-Intelligence.git\n"
@@ -156,16 +181,47 @@ def check_disk_and_write() -> None:
             "Move the project into your home folder (not a system or OneDrive-synced folder) and try again.")
 
 
-def check_network() -> None:
+def certificate_error(error: Exception) -> bool:
+    reason = getattr(error, "reason", error)
+    return isinstance(reason, ssl.SSLCertVerificationError) or "CERTIFICATE_VERIFY_FAILED" in str(error)
+
+
+def reachable_with_certifi(request: urllib.request.Request) -> bool:
+    """Same request, with the certificates that the certifi package (installed with requests) carries."""
     try:
-        request = urllib.request.Request(DATASET_HOST, method="HEAD", headers={"User-Agent": "prepnplaced-doctor"})
+        import certifi  # noqa: PLC0415 — only needed on this path
+        context = ssl.create_default_context(cafile=certifi.where())
+        with urllib.request.urlopen(request, timeout=8, context=context):
+            return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def check_network() -> None:
+    request = urllib.request.Request(DATASET_HOST, method="HEAD", headers={"User-Agent": "prepnplaced-doctor"})
+    try:
         with urllib.request.urlopen(request, timeout=8):
             pass
         say("✓", "Internet: the UCI dataset site answers")
-    except Exception as error:  # noqa: BLE001 — any failure here is the network's
-        bad(f"Cannot reach the dataset site ({type(error).__name__})",
-            "Module 1 downloads the data from archive.ics.uci.edu. College or office Wi-Fi sometimes\n"
-            "blocks it: try a phone hotspot, or open the project in a GitHub Codespace.")
+        return
+    except Exception as error:  # noqa: BLE001 — sorted out below
+        failure = error
+    if certificate_error(failure):
+        # python.org's Python on a Mac has no certificates until its "Install Certificates" step runs. The
+        # network is fine; this Python just cannot check who it is talking to. dbt's installer needs it.
+        if platform.system() == "Darwin":
+            fix = (f"Open Finder, then Applications, then the \"Python {sys.version_info[0]}.{sys.version_info[1]}\" folder, and\n"
+                   "double-click \"Install Certificates.command\". Then run this doctor again.")
+        else:
+            fix = "Run:  pip install --upgrade certifi\nthen set SSL_CERT_FILE to the path that  python -m certifi  prints."
+        bad("This Python cannot check website certificates yet, so secure downloads fail\n"
+            "      (installing dbt in the Blinkit and Airbnb projects fails the same way)", fix)
+        if reachable_with_certifi(request):
+            say("✓", "Internet: the UCI dataset site answers (this project's download brings its own certificates)")
+        return
+    bad(f"Cannot reach the dataset site ({type(failure).__name__})",
+        "Module 1 downloads the data from archive.ics.uci.edu. College or office Wi-Fi sometimes\n"
+        "blocks it: try a phone hotspot, or open the project in a GitHub Codespace.")
 
 
 def check_data() -> None:

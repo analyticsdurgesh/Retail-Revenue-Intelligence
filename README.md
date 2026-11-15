@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  <img alt="Python" src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white">
   <img alt="SQLite" src="https://img.shields.io/badge/SQL-SQLite-003B57?logo=sqlite&logoColor=white">
   <img alt="Streamlit" src="https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B?logo=streamlit&logoColor=white">
   <img alt="Plotly" src="https://img.shields.io/badge/Charts-Plotly-3F4F75?logo=plotly&logoColor=white">
@@ -113,18 +113,41 @@ prints the exact fix for anything missing (macOS, Linux and Windows).
 fork: Code → Codespaces → Create codespace). The packages install themselves; then run
 `bash scripts/run_all.sh` and `streamlit run dashboard/app.py` in the Codespace terminal.
 
-**On your laptop:**
+**On your laptop:** use Python 3.13, the version the Lab's lessons install and this project's CI
+tests on Mac and Windows (3.15 runs this project, but the dbt projects that follow cannot install on it
+yet). On a Mac with Python from python.org, also double-click **Install Certificates.command** in
+Applications > Python 3.13 once: without it Python cannot make secure downloads.
+
+Mac or Linux (Terminal):
 
 ```bash
-git clone https://github.com/analyticsdurgesh/Retail-Revenue-Intelligence.git
+git clone https://github.com/<your-username>/Retail-Revenue-Intelligence.git
 cd Retail-Revenue-Intelligence
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python scripts/doctor.py
 bash scripts/run_all.sh
 streamlit run dashboard/app.py
 ```
+
+Windows (PowerShell):
+
+```powershell
+git clone https://github.com/<your-username>/Retail-Revenue-Intelligence.git
+cd Retail-Revenue-Intelligence
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python scripts/doctor.py
+python src/download_data.py
+python src/prepare_data.py
+python src/eda.py
+python src/sql_analysis.py
+streamlit run dashboard/app.py
+```
+
+If PowerShell says *running scripts is disabled*, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, then activate again.
 
 Open:
 
