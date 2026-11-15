@@ -69,7 +69,7 @@ def note(text: str, fix: str = "") -> None:
 
 def check_python() -> None:
     version = ".".join(map(str, sys.version_info[:3]))
-    install = (f"Install Python {RECOMMENDED} (Module 1, Lesson 3 in the Lab has the exact installer for Mac\n"
+    install = (f"Install Python {RECOMMENDED} (Module 0, Lesson 2 in the Lab has the exact installer for Mac\n"
                f"and Windows, or see {PYTHON_313_PAGE} ), then make the venv again.")
     if sys.version_info[:2] < MIN_PYTHON:
         bad(f"Python {version} is too old: this project needs 3.11 or newer", install)
